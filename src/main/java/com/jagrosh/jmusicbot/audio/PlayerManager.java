@@ -42,19 +42,17 @@ import java.nio.file.NoSuchFileException;
  *
  * @author John Grosh (john.a.grosh@gmail.com)
  */
-public class PlayerManager extends DefaultAudioPlayerManager
-{
+public class PlayerManager extends DefaultAudioPlayerManager {
     private final static Logger LOGGER = LoggerFactory.getLogger(PlayerManager.class);
     private final Bot bot;
-    
-    public PlayerManager(Bot bot)
-    {
+
+    public PlayerManager(Bot bot) {
         this.bot = bot;
     }
-    
-    public void init()
-    {
-        TransformativeAudioSourceManager.createTransforms(bot.getConfig().getTransforms()).forEach(t -> registerSourceManager(t));
+
+    public void init() {
+        TransformativeAudioSourceManager.createTransforms(bot.getConfig().getTransforms())
+                .forEach(t -> registerSourceManager(t));
 
         YoutubeAudioSourceManager yt = setupYoutubeAudioSourceManager();
         registerSourceManager(yt);
@@ -73,62 +71,51 @@ public class PlayerManager extends DefaultAudioPlayerManager
         DuncteBotSources.registerAll(this, "en-US");
     }
 
-    private YoutubeAudioSourceManager setupYoutubeAudioSourceManager()
-    {
-        YoutubeAudioSourceManager yt = new YoutubeAudioSourceManager(true);
+    private YoutubeAudioSourceManager setupYoutubeAudioSourceManager() {
+        // Use the newer v2 YouTube source manager for better compatibility with current
+        // YouTube
+        YoutubeAudioSourceManager yt = new dev.lavalink.youtube.YoutubeAudioSourceManager();
         yt.setPlaylistPageCount(bot.getConfig().getMaxYTPlaylistPages());
 
         // OAuth2 setup
-        if (bot.getConfig().useYoutubeOauth2())
-        {
+        if (bot.getConfig().useYoutubeOauth2()) {
             String token = null;
-            try
-            {
+            try {
                 token = Files.readString(OtherUtil.getPath("youtubetoken.txt"));
-            }
-            catch (NoSuchFileException e)
-            {
+            } catch (NoSuchFileException e) {
                 /* ignored */
-            }
-            catch (IOException e)
-            {
+            } catch (IOException e) {
                 LOGGER.warn("Failed to read YouTube OAuth2 token file: {}", e.getMessage());
             }
             LOGGER.debug("Using YouTube OAuth2 refresh token {}", token);
-            try
-            {
+            try {
                 yt.useOauth2(token, false);
-            }
-            catch (Exception e)
-            {
-                LOGGER.warn("Failed to authorise with YouTube. If this issue persists, delete the youtubetoken.txt file to reauthorise.", e);
+            } catch (Exception e) {
+                LOGGER.warn(
+                        "Failed to authorise with YouTube. If this issue persists, delete the youtubetoken.txt file to reauthorise.",
+                        e);
             }
         }
         return yt;
     }
 
-    public Bot getBot()
-    {
+    public Bot getBot() {
         return bot;
     }
-    
-    public boolean hasHandler(Guild guild)
-    {
-        return guild.getAudioManager().getSendingHandler()!=null;
+
+    public boolean hasHandler(Guild guild) {
+        return guild.getAudioManager().getSendingHandler() != null;
     }
-    
-    public AudioHandler setUpHandler(Guild guild)
-    {
+
+    public AudioHandler setUpHandler(Guild guild) {
         AudioHandler handler;
-        if(guild.getAudioManager().getSendingHandler()==null)
-        {
+        if (guild.getAudioManager().getSendingHandler() == null) {
             AudioPlayer player = createPlayer();
             player.setVolume(bot.getSettingsManager().getSettings(guild).getVolume());
             handler = new AudioHandler(this, guild, player);
             player.addListener(handler);
             guild.getAudioManager().setSendingHandler(handler);
-        }
-        else
+        } else
             handler = (AudioHandler) guild.getAudioManager().getSendingHandler();
         return handler;
     }
