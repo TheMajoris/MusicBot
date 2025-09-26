@@ -31,6 +31,8 @@ import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceM
 import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
+import com.github.topi314.lavasrc.spotify.SpotifySourceManager;
+import com.github.topi314.lavasrc.mirror.DefaultMirroringAudioTrackResolver;
 import net.dv8tion.jda.api.entities.Guild;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +58,24 @@ public class PlayerManager extends DefaultAudioPlayerManager {
 
         YoutubeAudioSourceManager yt = setupYoutubeAudioSourceManager();
         registerSourceManager(yt);
+
+        // Register Spotify source manager
+        // Spotify requires client ID and secret to be configured for full functionality
+        String spotifyClientId = bot.getConfig().getSpotifyClientId();
+        String spotifyClientSecret = bot.getConfig().getSpotifyClientSecret();
+
+        if (spotifyClientId != null && !spotifyClientId.isEmpty() &&
+                spotifyClientSecret != null && !spotifyClientSecret.isEmpty()) {
+            try {
+                registerSourceManager(new SpotifySourceManager(spotifyClientId, spotifyClientSecret, "US", this,
+                        new DefaultMirroringAudioTrackResolver(null)));
+                LOGGER.info("Spotify source manager registered successfully");
+            } catch (Exception e) {
+                LOGGER.warn("Failed to initialize Spotify source manager: " + e.getMessage());
+            }
+        } else {
+            LOGGER.info("Spotify client ID and/or secret not configured. Spotify support disabled.");
+        }
 
         registerSourceManager(SoundCloudAudioSourceManager.createDefault());
         registerSourceManager(new BandcampAudioSourceManager());
